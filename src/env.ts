@@ -93,8 +93,14 @@ function loadOAuthEnv(): OAuthEnv {
   }
   return {
     clientName: optional("CLIENT_NAME", "litewrite"),
-    // Base OAuth scope + a granular repo scope for our one collection only.
-    scope: optional("OAUTH_SCOPE", "atproto repo:com.michielbdejong.litewrite.note"),
+    // Base OAuth scope + a granular repo scope for our one collection, plus the
+    // rpc scope for the one AppView call we make (`/api/me` reads the profile).
+    // Without it the PDS mints a token the Bluesky AppView rejects with
+    // ScopeMissingError (see FRICTION.md).
+    scope: optional(
+      "OAUTH_SCOPE",
+      "atproto repo:com.michielbdejong.litewrite.note rpc:app.bsky.actor.getProfile?aud=did:web:api.bsky.app#bsky_appview",
+    ),
     privateJwk: parsePrivateJwk(required("PRIVATE_JWK")),
     cookieSecret,
   };
