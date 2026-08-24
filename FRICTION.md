@@ -94,3 +94,26 @@ blog post and a small number of high-quality upstream issues/PRs.
 - **Prevention**: The scope error message is actually excellent (names the exact string to
   add) — the gap was that nothing in the SDK docs flags that AppView reads need an `rpc:`
   scope distinct from the PDS-side `repo:` one.
+
+## 2026-08-24 — Scope fix alone didn't stop the crash; the real bug was an uncaught XRPCError
+
+- **Attempted**: After adding the `rpc:` scope above and redeploying, the identical
+  `ScopeMissingError` still crashed the app (issue #8, reopened).
+- **Expected**: A code fix that changes what scope gets *requested* would end the crash.
+- **Happened**: It didn't, because OAuth scope is bound to a session at consent time —
+  redeploying new code doesn't retroactively broaden a token a user already holds from
+  before the fix. Anyone who authorized under the old scope keeps hitting the old error
+  until they log out and reconnect (triggering a fresh consent against the now-broader
+  `client-metadata.json`). Separately, and more importantly: `/api/me`'s
+  `agent.getProfile()` call wasn't wrapped in try/catch, so *any* XRPCError there
+  (scope, PDS downtime, a bad handle, anything) was an uncaught rejection in an async
+  Express 4 handler — which crashes the entire process, not just that one request. One
+  user's stale session took the whole app down for everyone.
+- **Fix**: Wrapped the call; a 401/403 (insufficient scope) clears the session and
+  returns 401 so the client re-prompts login instead of looping or crashing. Other
+  errors return 502 without touching the session, since they may be transient.
+- **Cost**: A second, avoidable crash-and-reopen cycle on the same issue.
+- **Prevention**: Express 4's async handlers don't catch thrown/rejected errors — this
+  is a general hazard, not atproto-specific. Every route that awaits an SDK call needs
+  its own try/catch (or an async-wrapper middleware) or a single bad response from any
+  upstream service becomes a full outage.
