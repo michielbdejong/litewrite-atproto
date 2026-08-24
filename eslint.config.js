@@ -14,4 +14,11 @@ export default tseslint.config(
       "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
     },
   },
+  {
+    // Plain-JS Node scripts (no TypeScript to define globals for us).
+    files: ["**/*.mjs", "scripts/**"],
+    languageOptions: {
+      globals: { console: "readonly", process: "readonly" },
+    },
+  },
 );

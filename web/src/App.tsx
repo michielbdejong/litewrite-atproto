@@ -1,43 +1,117 @@
 import { useEffect, useState } from "react";
 
-type HealthState =
+interface Profile {
+  did: string;
+  handle: string;
+  displayName: string | null;
+  avatar: string | null;
+}
+
+type AuthState =
   | { status: "loading" }
-  | { status: "ok" }
-  | { status: "error"; detail: string };
+  | { status: "anon" }
+  | { status: "authed"; profile: Profile };
 
 /**
- * M0 placeholder shell. Confirms the frontend builds, mounts, and can reach the
- * BFF (via the health endpoint). The real note list + editor arrive in M3.
+ * M1 shell: proves the OAuth round trip end to end. Logged out, it shows a
+ * handle login form; logged in, it renders the profile fetched from the PDS via
+ * the BFF. The note list + editor replace this in M3.
  */
 export function App(): React.JSX.Element {
-  const [health, setHealth] = useState<HealthState>({ status: "loading" });
+  const [auth, setAuth] = useState<AuthState>({ status: "loading" });
+  const [handle, setHandle] = useState("");
+  const loginError = new URLSearchParams(window.location.search).get("error");
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/health")
-      .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`HTTP ${res.status}`))))
-      .then(() => {
-        if (!cancelled) setHealth({ status: "ok" });
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) {
-          setHealth({ status: "error", detail: err instanceof Error ? err.message : String(err) });
+    fetch("/api/me")
+      .then(async (res) => {
+        if (cancelled) return;
+        if (res.ok) {
+          setAuth({ status: "authed", profile: (await res.json()) as Profile });
+        } else {
+          setAuth({ status: "anon" });
         }
+      })
+      .catch(() => {
+        if (!cancelled) setAuth({ status: "anon" });
       });
     return () => {
       cancelled = true;
     };
   }, []);
 
+  function onLogin(e: React.FormEvent): void {
+    e.preventDefault();
+    const h = handle.trim();
+    if (h) window.location.href = `/login?handle=${encodeURIComponent(h)}`;
+  }
+
+  async function onLogout(): Promise<void> {
+    await fetch("/api/logout", { method: "POST" });
+    window.location.href = "/";
+  }
+
   return (
     <main className="shell">
-      <h1>litewrite</h1>
-      <p className="tagline">Distraction-free notes, stored in your own AT Protocol repository.</p>
-      <p className="health" data-status={health.status}>
-        {health.status === "loading" && "Checking backend…"}
-        {health.status === "ok" && "Backend reachable ✓"}
-        {health.status === "error" && `Backend unreachable: ${health.detail}`}
-      </p>
+      <header className="masthead">
+        <h1>litewrite</h1>
+        <p className="tagline">
+          Distraction-free notes, stored in your own AT Protocol repository.
+          <br />
+          <strong>Notes are public</strong> — anyone can read them from your repo.
+        </p>
+      </header>
+
+      {auth.status === "loading" && <p className="muted">Loading…</p>}
+
+      {auth.status === "anon" && (
+        <section className="card">
+          <h2>Sign in</h2>
+          {loginError && (
+            <p className="error" role="alert">
+              Login didn’t complete ({loginError}). Please try again.
+            </p>
+          )}
+          <form onSubmit={onLogin} className="login">
+            <label htmlFor="handle">Your atproto handle</label>
+            <input
+              id="handle"
+              name="handle"
+              placeholder="alice.bsky.social"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              value={handle}
+              onChange={(e) => setHandle(e.target.value)}
+            />
+            <button type="submit" disabled={!handle.trim()}>
+              Sign in
+            </button>
+          </form>
+          <p className="muted">
+            Works with any atproto handle — bsky.social or a self-hosted PDS.
+          </p>
+        </section>
+      )}
+
+      {auth.status === "authed" && (
+        <section className="card">
+          <div className="profile">
+            {auth.profile.avatar && (
+              <img className="avatar" src={auth.profile.avatar} alt="" width={48} height={48} />
+            )}
+            <div>
+              <div className="display-name">{auth.profile.displayName ?? auth.profile.handle}</div>
+              <div className="muted">@{auth.profile.handle}</div>
+            </div>
+          </div>
+          <p className="muted did">{auth.profile.did}</p>
+          <button type="button" onClick={() => void onLogout()}>
+            Log out
+          </button>
+        </section>
+      )}
     </main>
   );
 }
