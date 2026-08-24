@@ -77,3 +77,20 @@ blog post and a small number of high-quality upstream issues/PRs.
   (with the `action` default) — distinct from the evolving proposal — would be the single
   most useful doc for an app author requesting minimal scope. **Candidate upstream issue**,
   and directly on-message given the consent-screen focus of the brief.
+
+## 2026-08-24 — `repo:` scope alone doesn't cover AppView reads
+
+- **Attempted**: Deploy with the scope above and call `agent.getProfile` (via the Bluesky
+  AppView) from `/api/me`.
+- **Expected**: The `atproto` base scope would be enough for a read of the logged-in
+  user's own profile.
+- **Happened**: The AppView rejected the call with `ScopeMissingError: Missing required
+  scope "rpc:app.bsky.actor.getProfile?aud=did:web:api.bsky.app#bsky_appview"` (issue #8).
+  Granular scopes cover XRPC calls per-method-per-audience, not just repo writes — a read
+  routed through a service other than the user's own PDS needs its own `rpc:` grant.
+- **Fix**: Added that exact `rpc:` scope to the default `OAUTH_SCOPE`. Confirms the syntax
+  the previous entry couldn't verify from docs alone.
+- **Cost**: One crash loop in production before the log gave the exact string to copy.
+- **Prevention**: The scope error message is actually excellent (names the exact string to
+  add) — the gap was that nothing in the SDK docs flags that AppView reads need an `rpc:`
+  scope distinct from the PDS-side `repo:` one.

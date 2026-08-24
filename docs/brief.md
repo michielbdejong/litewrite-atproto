@@ -123,8 +123,12 @@ Publish the lexicon so it resolves, and generate types with `lex`.
 Do **not** ask for blanket `atproto`. Use granular scopes:
 
 ```
-atproto repo:com.michielbdejong.litewrite.note
+atproto repo:com.michielbdejong.litewrite.note rpc:app.bsky.actor.getProfile?aud=did:web:api.bsky.app#bsky_appview
 ```
+
+The trailing `rpc:` scope is required for the one AppView call the BFF makes (`/api/me`
+reads the profile via `agent.getProfile`) — without it the AppView rejects the call with
+`ScopeMissingError` even though the PDS-side repo scope is fine (see FRICTION.md).
 
 Narrow further with `?action=` if the syntax supports it at time of writing. This is a
 deliberate signal: the author co-authored an IETF draft on fine-grained consent
