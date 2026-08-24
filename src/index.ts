@@ -15,6 +15,9 @@ import { dirname, join } from "node:path";
 import express from "express";
 import { env } from "./env.js";
 import { assertDbConnection, runMigrations, pool } from "./db.js";
+import { createOAuthClient } from "./auth/client.js";
+import { createOAuthRouter } from "./routes/oauth.js";
+import { createApiRouter } from "./routes/api.js";
 
 const serverDir = dirname(fileURLToPath(import.meta.url));
 // In production the compiled server lives in dist/; the web build is web/dist.
@@ -24,8 +27,11 @@ async function main(): Promise<void> {
   await assertDbConnection();
   await runMigrations();
 
+  const oauthClient = await createOAuthClient();
+
   const app = express();
   app.disable("x-powered-by");
+  app.set("trust proxy", true); // Heroku terminates TLS at the router.
   app.use(express.json());
 
   // Liveness/readiness probe: also confirms the DB round-trips.
@@ -37,6 +43,10 @@ async function main(): Promise<void> {
       res.status(503).json({ status: "db_unavailable" });
     }
   });
+
+  // OAuth metadata + login round trip, and the authenticated API.
+  app.use(createOAuthRouter(oauthClient));
+  app.use("/api", createApiRouter(oauthClient));
 
   // Serve the built SPA. In dev, the Vite dev server proxies /api to this
   // process instead (see web/vite.config.ts), so static serving is a no-op.

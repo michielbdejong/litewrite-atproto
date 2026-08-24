@@ -82,9 +82,31 @@ never returned to the browser.
 syntax supports it at build time — to be verified against current docs, logged in FRICTION.md).
 The resulting consent screen is the money screenshot for the write-up.
 
+## Product decision — notes are public (resolves issue #4)
+
+Base atproto has no private record: a repo is a public, signed structure, and any record
+is world-readable by DID over unauthenticated endpoints. Our write scope governs *writes
+through this app*, not reads. So "private notes" isn't a property the storage layer can
+offer without permissioned data (proposal 0016 — experimental, out of scope per the brief).
+
+Decision: **embrace public.**
+
+- litewrite-atproto is a *public* writing app. The UI says so plainly (not fine print) —
+  this is what turns a would-be "data is public but the UI implies private" security bug
+  into an honest product.
+- Keep our own lexicon `com.michielbdejong.litewrite.note` (preserves M2's lexicon +
+  codegen story).
+- Add a **read-only reader**: view any handle's notes. Small scope, closes the "public
+  data you can't read in-app" gap, and exercises cross-PDS reads (which the brief wants to
+  show off).
+- Autosave writes are public versions (a draft is public from keystroke one). We accept
+  this for now with honest save-state copy ("saved — and public"); an explicit-Publish
+  variant is noted as a considered alternative for the write-up.
+
 ## Milestone execution order
 
-Mirrors the brief. Each lands as its own reviewable set of commits.
+Mirrors the brief, plus the reader from the decision above. Each lands as its own
+reviewable set of commits.
 
 - **M0 — scaffolding** *(not in brief, prerequisite)*: workspaces, tsconfig (strict), Express
   hello-world serving a Vite build, Postgres connection + migration runner, `.env.example`,
@@ -95,8 +117,10 @@ Mirrors the brief. Each lands as its own reviewable set of commits.
 - **M2 — Records**: publish lexicon, `lex` codegen into `src/lexicon/`, CRUD in `/api/notes`
   using `Agent.com.atproto.repo.*`. Verify records land with an independent tool
   (`goat`/`atproto-repo` browser).
+- **M2.5 — Reader** *(from the issue #4 decision)*: read-only `GET /api/notes?actor=<handle>`
+  and a `/read/:handle` view. Cross-PDS reads via an unauthenticated `Agent`. Small.
 - **M3 — Editor**: React note list + editor, debounced autosave, optimistic updates, explicit
-  save-state indicator, token-expiry-mid-edit handled without text loss.
+  save-state indicator, token-expiry-mid-edit handled without text loss. Public save-state copy.
 - **M4 — States & polish**: loading / empty / error / offline / session-expired; responsive to
   phone width; keyboard navigable; one coherent visual direction.
 - **M5 — Tests & deploy**: Playwright (OAuth round trip + note CRUD), GitHub Actions CI, Heroku
@@ -108,14 +132,20 @@ Mirrors the brief. Each lands as its own reviewable set of commits.
 
 Tracked here and in FRICTION.md as they're answered against current docs:
 
-1. **Granular scope syntax** — exact string the auth server accepts in 2026 (`repo:<nsid>`,
-   any `?action=` qualifier). Verify against the OAuth guide, don't trust the brief.
-2. **Browser session library** — `iron-session` (stateless signed cookie, no DB row) vs a
-   server-side row in Postgres. Leaning `iron-session` for simplicity; decide in M1.
+1. **Granular scope syntax** — *(open)* exact string the auth server accepts, incl. any
+   `?action=` qualifier and its default. Couldn't be pinned from docs (see FRICTION.md);
+   using `atproto repo:com.michielbdejong.litewrite.note`, to be confirmed against the live
+   auth server + consent screen at deploy.
+2. **Browser session library** — *(resolved, M1)* `iron-session` stateless encrypted cookie
+   holding only the DID; no server-side row. `browser_session` table dropped (migration 002).
+   Revocation happens at the token layer via `client.revoke(did)`.
 3. **`lex` package name / invocation** — `@atproto/lex-cli` vs `@atproto/lex`; codegen output
    layout. Resolve in M2.
 4. **Heroku specifics you own** — domain name, `DATABASE_URL` SSL mode, dyno type. You confirm
    when we get to M5.
+5. **Local OAuth dev on-ramp** — *(open)* confidential `client_id` needs HTTPS + non-IP host,
+   so local testing needs a tunnel. A bare-loopback client is a separate construction we
+   haven't wired; decide whether it's worth adding (see FRICTION.md).
 
 ## Quality gates (every milestone)
 
