@@ -49,3 +49,7 @@ jobs:
           claude_args: |
             --allowedTools "Read,Write,Edit,Glob,Grep,Bash(git:*),Bash(npm run typecheck),Bash(npm run lint),Bash(npm install),Bash(gh pr create:*),Bash(gh pr merge:*),Bash(gh issue comment:*)"
             --max-turns 40
+          # Temporary: surfaces the real SDK error while diagnosing the
+          # instant is_error:true failure on the first live run. Revert once
+          # the action reliably completes real work.
+          show_full_output: true
