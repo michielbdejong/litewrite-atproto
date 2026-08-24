@@ -1,0 +1,51 @@
+name: Claude Issue Auto-Fix
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  auto-fix:
+    # Only run for issues opened by the owner or a collaborator. Anyone who can
+    # open an issue on a public repo can otherwise put arbitrary instructions
+    # in front of a bot that has write access to this repository.
+    if: contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.issue.author_association)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          prompt: |
+            REPO: ${{ github.repository }}
+            ISSUE NUMBER: ${{ github.event.issue.number }}
+            TITLE: ${{ github.event.issue.title }}
+            BODY: ${{ github.event.issue.body }}
+
+            Investigate this issue. If it's something you can fix directly:
+            - Create a new branch off main.
+            - Implement the fix.
+            - Run `npm run typecheck` and `npm run lint`; fix anything they catch
+              before proceeding.
+            - Commit and push the branch, then open a pull request against main
+              that references and closes this issue (include "Fixes #${{ github.event.issue.number }}"
+              in the PR body).
+            - If the PR has no other blockers (no CI configured, no merge
+              conflicts), merge it and leave the issue for GitHub to auto-close.
+
+            If the issue needs clarification, isn't a code change, or you're not
+            confident in a fix, post a comment on the issue explaining why
+            instead of guessing.
+
+          claude_args: |
+            --allowedTools "Read,Write,Edit,Glob,Grep,Bash(git:*),Bash(npm run typecheck),Bash(npm run lint),Bash(npm install),Bash(gh pr create:*),Bash(gh pr merge:*),Bash(gh issue comment:*)"
+            --max-turns 40
