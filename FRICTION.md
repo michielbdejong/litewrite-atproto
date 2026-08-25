@@ -137,3 +137,43 @@ blog post and a small number of high-quality upstream issues/PRs.
   (with the `action` default) — distinct from the evolving proposal — would be the single
   most useful doc for an app author requesting minimal scope. **Candidate upstream issue**,
   and directly on-message given the consent-screen focus of the brief.
+
+## 2026-08-24 — `repo:` scope alone doesn't cover AppView reads
+
+- **Attempted**: Deploy with the scope above and call `agent.getProfile` (via the Bluesky
+  AppView) from `/api/me`.
+- **Expected**: The `atproto` base scope would be enough for a read of the logged-in
+  user's own profile.
+- **Happened**: The AppView rejected the call with `ScopeMissingError: Missing required
+  scope "rpc:app.bsky.actor.getProfile?aud=did:web:api.bsky.app#bsky_appview"` (issue #8).
+  Granular scopes cover XRPC calls per-method-per-audience, not just repo writes — a read
+  routed through a service other than the user's own PDS needs its own `rpc:` grant.
+- **Fix**: Added that exact `rpc:` scope to the default `OAUTH_SCOPE`. Confirms the syntax
+  the previous entry couldn't verify from docs alone.
+- **Cost**: One crash loop in production before the log gave the exact string to copy.
+- **Prevention**: The scope error message is actually excellent (names the exact string to
+  add) — the gap was that nothing in the SDK docs flags that AppView reads need an `rpc:`
+  scope distinct from the PDS-side `repo:` one.
+
+## 2026-08-24 — Scope fix alone didn't stop the crash; the real bug was an uncaught XRPCError
+
+- **Attempted**: After adding the `rpc:` scope above and redeploying, the identical
+  `ScopeMissingError` still crashed the app (issue #8, reopened).
+- **Expected**: A code fix that changes what scope gets *requested* would end the crash.
+- **Happened**: It didn't, because OAuth scope is bound to a session at consent time —
+  redeploying new code doesn't retroactively broaden a token a user already holds from
+  before the fix. Anyone who authorized under the old scope keeps hitting the old error
+  until they log out and reconnect (triggering a fresh consent against the now-broader
+  `client-metadata.json`). Separately, and more importantly: `/api/me`'s
+  `agent.getProfile()` call wasn't wrapped in try/catch, so *any* XRPCError there
+  (scope, PDS downtime, a bad handle, anything) was an uncaught rejection in an async
+  Express 4 handler — which crashes the entire process, not just that one request. One
+  user's stale session took the whole app down for everyone.
+- **Fix**: Wrapped the call; a 401/403 (insufficient scope) clears the session and
+  returns 401 so the client re-prompts login instead of looping or crashing. Other
+  errors return 502 without touching the session, since they may be transient.
+- **Cost**: A second, avoidable crash-and-reopen cycle on the same issue.
+- **Prevention**: Express 4's async handlers don't catch thrown/rejected errors — this
+  is a general hazard, not atproto-specific. Every route that awaits an SDK call needs
+  its own try/catch (or an async-wrapper middleware) or a single bad response from any
+  upstream service becomes a full outage.
