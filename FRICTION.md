@@ -16,6 +16,66 @@ blog post and a small number of high-quality upstream issues/PRs.
 
 <!-- entries below, newest first -->
 
+## 2026-08-25 — `@atproto/lex` codegen is incompatible with `exactOptionalPropertyTypes`
+
+- **Attempted**: Compile the `lex build` output under a strict tsconfig that
+  included `exactOptionalPropertyTypes: true`.
+- **Expected**: Generated code compiles under strict settings — it's the newest
+  first-party tooling and the brief rewards using it.
+- **Happened**: `tsc` errors in the generated `note.defs.ts`: the generated `Main`
+  type declares `title?: string` while the `l.object({...})` validator infers
+  `title: string | undefined`, and those are incompatible under
+  `exactOptionalPropertyTypes`. Since the file is generated (DO NOT EDIT), the
+  only fix is to drop that one compiler flag (plain `strict` still holds).
+- **Cost**: ~15 min.
+- **Prevention**: The generated types should be internally consistent under
+  `exactOptionalPropertyTypes` (emit `title?: string | undefined`, or match the
+  validator's inference). **Candidate upstream issue** — a small, concrete codegen
+  fix, on-message for the team's lexicon-tooling roadmap.
+
+## 2026-08-25 — `RecordSchema.build()` injects `$type` but does not validate
+
+- **Attempted**: Rely on `noteSchema.build({...})` to both construct the record
+  and reject invalid input (over-long `text`, etc.) before `putRecord`.
+- **Expected**: A `build()` derived from a schema validates against that schema.
+- **Happened**: `build()` only injects `$type` — an over-length `text` (100001
+  chars vs `maxLength: 100000`) sailed through. Validation lives in the separate
+  `check()` / `assert()` / `safeParse()` methods. Caught only by an explicit
+  offline test that deliberately fed invalid input.
+- **Cost**: ~20 min (writing the test that exposed it, then re-plumbing to call
+  `check()` after `build()`).
+- **Prevention**: The name `build` implies validation to most readers; either
+  validate inside `build()` or document prominently that it does not. A one-liner
+  in the `record()` JSDoc ("build() does not validate; use check()/assert()")
+  would prevent the wrong assumption. **Candidate upstream doc issue.**
+
+## 2026-08-25 — `assert()` assertion signature trips TS2775 on an imported schema
+
+- **Attempted**: Validate with `noteSchema.assert(record)`.
+- **Expected**: Compiles like any method call.
+- **Happened**: `error TS2775: Assertions require every name in the call target to
+  be declared with an explicit type annotation` — TypeScript's rule for
+  assertion-signature methods (`asserts x is T`) accessed via an imported binding.
+  Switched to `check()` (throws identically, plain `void` return, no 2775).
+- **Cost**: ~10 min.
+- **Prevention**: Worth a note in the schema docs that `check()` is the
+  ergonomic throwing validator for imported schemas, since `assert()` hits a
+  TS limitation in that common case.
+
+## 2026-08-25 — PDS can't validate a not-yet-resolvable custom lexicon
+
+- **Attempted**: Pass `validate: true` to `createRecord`/`putRecord` for
+  belt-and-braces server-side validation.
+- **Expected**: Straightforward.
+- **Happened**: The PDS can only validate lexicons it can resolve; a brand-new
+  custom NSID isn't resolvable until published, so `validate: true` is a
+  liability during development. Left `validate` unset (PDS validates known
+  lexicons only) and do authoritative validation client-side via `check()`.
+- **Cost**: ~10 min of reasoning.
+- **Prevention**: This is arguably correct behaviour, but the trade-off
+  (`true` vs unset vs `false` for an unpublished lexicon) deserves a sentence in
+  the records/CRUD guide.
+
 ## 2026-08-24 — `use` on a private JWK is deprecated in favour of `key_ops`
 
 - **Attempted**: Generated the ES256/P-256 signing key and set `use: "sig"` on the

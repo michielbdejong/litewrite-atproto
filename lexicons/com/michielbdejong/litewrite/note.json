@@ -1,0 +1,37 @@
+{
+  "lexicon": 1,
+  "id": "com.michielbdejong.litewrite.note",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "A single litewrite note. Records live in the author's public repo and are world-readable.",
+      "key": "tid",
+      "record": {
+        "type": "object",
+        "required": ["text", "createdAt"],
+        "properties": {
+          "text": {
+            "type": "string",
+            "maxLength": 100000,
+            "description": "The note body."
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 300,
+            "description": "Optional note title."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "datetime",
+            "description": "When the note was first created."
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "datetime",
+            "description": "When the note was last edited."
+          }
+        }
+      }
+    }
+  }
+}

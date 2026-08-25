@@ -3,7 +3,8 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
   {
-    ignores: ["**/dist/**", "**/node_modules/**"],
+    // Generated code (lexicon types from `npm run lexgen`) is not linted.
+    ignores: ["**/dist/**", "**/node_modules/**", "src/lexicon/**"],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
