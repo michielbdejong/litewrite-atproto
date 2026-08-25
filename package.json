@@ -20,18 +20,22 @@
     "build:server": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
     "keygen": "node scripts/generate-keys.mjs",
+    "lexgen": "lex build --lexicons ./lexicons --out ./src/lexicon --clear",
+    "test:unit": "node --import tsx --test tests/**/*.test.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit && npm -w web run typecheck",
     "lint": "eslint . --max-warnings 0"
   },
   "dependencies": {
     "@atproto/api": "^0.20.41",
     "@atproto/jwk-jose": "^0.2.4",
+    "@atproto/lex": "^0.3.6",
     "@atproto/oauth-client-node": "^0.5.3",
     "express": "^4.21.2",
     "iron-session": "^8.0.4",
     "pg": "^8.13.1"
   },
   "devDependencies": {
+    "@atproto/lex-cli": "^0.10.10",
     "@eslint/js": "^9.17.0",
     "@types/express": "^4.17.21",
     "@types/node": "^22.10.5",

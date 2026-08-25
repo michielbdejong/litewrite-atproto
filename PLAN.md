@@ -139,8 +139,11 @@ Tracked here and in FRICTION.md as they're answered against current docs:
 2. **Browser session library** — *(resolved, M1)* `iron-session` stateless encrypted cookie
    holding only the DID; no server-side row. `browser_session` table dropped (migration 002).
    Revocation happens at the token layer via `client.revoke(did)`.
-3. **`lex` package name / invocation** — `@atproto/lex-cli` vs `@atproto/lex`; codegen output
-   layout. Resolve in M2.
+3. **`lex` package name / invocation** — *(resolved, M2)* `@atproto/lex` (runtime `l` helper)
+   + `@atproto/lex-cli` (`lex build --lexicons ./lexicons --out ./src/lexicon`). Generated
+   files are checked in; regenerate with `npm run lexgen`. Note: `build()` injects `$type`
+   only — validate with `check()` (see FRICTION.md). `exactOptionalPropertyTypes` dropped for
+   compatibility with the generated code.
 4. **Heroku specifics you own** — domain name, `DATABASE_URL` SSL mode, dyno type. You confirm
    when we get to M5.
 5. **Local OAuth dev on-ramp** — *(open)* confidential `client_id` needs HTTPS + non-IP host,

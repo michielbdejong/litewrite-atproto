@@ -18,6 +18,7 @@ import { assertDbConnection, runMigrations, pool } from "./db.js";
 import { createOAuthClient } from "./auth/client.js";
 import { createOAuthRouter } from "./routes/oauth.js";
 import { createApiRouter } from "./routes/api.js";
+import { createNotesRouter } from "./routes/notes.js";
 
 const serverDir = dirname(fileURLToPath(import.meta.url));
 // In production the compiled server lives in dist/; the web build is web/dist.
@@ -47,6 +48,7 @@ async function main(): Promise<void> {
   // OAuth metadata + login round trip, and the authenticated API.
   app.use(createOAuthRouter(oauthClient));
   app.use("/api", createApiRouter(oauthClient));
+  app.use("/api/notes", createNotesRouter(oauthClient));
 
   // Serve the built SPA. In dev, the Vite dev server proxies /api to this
   // process instead (see web/vite.config.ts), so static serving is a no-op.
