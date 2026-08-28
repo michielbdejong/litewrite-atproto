@@ -119,10 +119,13 @@ reviewable set of commits.
   (`goat`/`atproto-repo` browser).
 - **M2.5 — Reader** *(from the issue #4 decision)*: read-only `GET /api/notes?actor=<handle>`
   and a `/read/:handle` view. Cross-PDS reads via an unauthenticated `Agent`. Small.
-- **M3 — Editor**: React note list + editor, debounced autosave, optimistic updates, explicit
-  save-state indicator, token-expiry-mid-edit handled without text loss. Public save-state copy.
-- **M4 — States & polish**: loading / empty / error / offline / session-expired; responsive to
-  phone width; keyboard navigable; one coherent visual direction.
+- **M3 — Editor** *(done)*: React note list + editor, 800ms debounced autosave, optimistic
+  list updates, explicit save-state indicator ("Saved · public"), token-expiry-mid-edit handled
+  without text loss (draft mirrored to localStorage + re-login that restores it). Verified by
+  driving the built SPA in Chromium with a mocked API.
+- **M4 — States & polish** *(partly in M3)*: loading / empty / error / session-expired and
+  responsive single-pane phone layout landed with M3. Remaining: offline handling, keyboard-nav
+  polish, and a visual-direction pass.
 - **M5 — Tests & deploy**: Playwright (OAuth round trip + note CRUD), GitHub Actions CI, Heroku
   deploy at stable URL, README (architecture, why BFF, remoteStorage lineage, run instructions).
 - **M6 — Write-up**: blog post + a small number of high-quality upstream issues/PRs distilled

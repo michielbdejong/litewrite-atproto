@@ -1,6 +1,13 @@
 :root {
   color-scheme: light dark;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-ui: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-read: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+  --line: color-mix(in srgb, CanvasText 14%, transparent);
+  --line-strong: color-mix(in srgb, CanvasText 28%, transparent);
+  --muted: color-mix(in srgb, CanvasText 55%, transparent);
+  --accent: #3b6ea5;
+  --danger: #b00020;
+  font-family: var(--font-ui);
   line-height: 1.5;
 }
 
@@ -8,49 +15,84 @@
   box-sizing: border-box;
 }
 
+html,
+body,
+#root {
+  height: 100%;
+}
+
 body {
   margin: 0;
-  min-height: 100vh;
   background: Canvas;
   color: CanvasText;
 }
 
-.shell {
-  max-width: 42rem;
-  margin: 0 auto;
-  padding: 4rem 1.5rem;
+/* ---- shared bits -------------------------------------------------------- */
+
+.muted {
+  color: var(--muted);
+  font-size: 0.9rem;
 }
 
-h1 {
+.pad {
+  padding: 0.75rem 1rem;
+}
+
+.error {
+  color: var(--danger);
+  font-size: 0.9rem;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+.linkish {
+  background: none;
+  border: none;
+  color: var(--accent);
+  padding: 0 0.25rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.linkish:hover {
+  text-decoration: underline;
+}
+
+input,
+textarea {
+  font: inherit;
+  background: Canvas;
+  color: CanvasText;
+}
+
+/* ---- centered auth screens --------------------------------------------- */
+
+.center {
+  min-height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+}
+
+.card {
+  border: 1px solid var(--line-strong);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  max-width: 26rem;
+}
+
+.signin h1 {
   margin: 0 0 0.25rem;
   font-size: 2rem;
   letter-spacing: -0.02em;
 }
 
 .tagline {
-  margin: 0 0 2rem;
-  opacity: 0.7;
-}
-
-.masthead {
-  margin-bottom: 2rem;
-}
-
-.muted {
-  opacity: 0.65;
-  font-size: 0.9rem;
-}
-
-.card {
-  border: 1px solid color-mix(in srgb, CanvasText 15%, transparent);
-  border-radius: 0.75rem;
-  padding: 1.5rem;
-  max-width: 26rem;
-}
-
-.card h2 {
-  margin-top: 0;
-  font-size: 1.1rem;
+  margin: 0 0 1.25rem;
+  color: var(--muted);
 }
 
 .login {
@@ -62,56 +104,253 @@ h1 {
 
 .login label {
   font-size: 0.85rem;
-  opacity: 0.8;
+  color: var(--muted);
 }
 
 input {
   padding: 0.6rem 0.75rem;
   border-radius: 0.5rem;
-  border: 1px solid color-mix(in srgb, CanvasText 25%, transparent);
-  background: Canvas;
-  color: CanvasText;
+  border: 1px solid var(--line-strong);
   font-size: 1rem;
 }
 
-button {
+.login button[type="submit"] {
   padding: 0.6rem 1rem;
   border-radius: 0.5rem;
   border: 1px solid transparent;
   background: CanvasText;
   color: Canvas;
-  font-size: 0.95rem;
-  cursor: pointer;
 }
 
-button:disabled {
+.login button:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
 
-.error {
-  color: #b00020;
-  font-size: 0.9rem;
+/* ---- workspace ---------------------------------------------------------- */
+
+.workspace {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
-.profile {
+.topbar {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid var(--line);
 }
 
-.avatar {
-  border-radius: 50%;
-  object-fit: cover;
+.brand {
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
-.display-name {
+.spacer {
+  flex: 1;
+}
+
+.who {
+  font-size: 0.85rem;
+}
+
+.banner {
+  padding: 0.6rem 1rem;
+  background: color-mix(in srgb, var(--danger) 12%, Canvas);
+  color: CanvasText;
+  font-size: 0.9rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.panes {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+/* note list */
+
+.notelist {
+  width: 17rem;
+  flex: none;
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.notelist-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  position: sticky;
+  top: 0;
+  background: Canvas;
+  border-bottom: 1px solid var(--line);
+}
+
+.notelist-title {
   font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
 }
 
-.did {
-  margin: 1rem 0;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.75rem;
-  word-break: break-all;
+.new-btn {
+  border: 1px solid var(--line-strong);
+  background: none;
+  color: CanvasText;
+  border-radius: 0.5rem;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.85rem;
+}
+
+.notes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.notes li {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid var(--line);
+}
+
+.note-item {
+  flex: 1;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 0.7rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.note-item:hover {
+  background: color-mix(in srgb, CanvasText 5%, transparent);
+}
+
+.note-item.selected {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+.note-heading {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.note-sub {
+  font-size: 0.8rem;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.delete-btn {
+  border: none;
+  background: none;
+  color: var(--muted);
+  padding: 0 0.75rem;
+  font-size: 0.85rem;
+}
+
+.delete-btn:hover {
+  color: var(--danger);
+}
+
+/* editor */
+
+.editor {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.empty-editor {
+  align-items: center;
+  justify-content: center;
+}
+
+.editor-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 1rem;
+  min-height: 2.5rem;
+}
+
+.back-btn {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 0.95rem;
+}
+
+.save-status {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-left: auto;
+}
+
+.save-status[data-state="saved"] {
+  color: color-mix(in srgb, green 60%, var(--muted));
+}
+
+.save-status[data-state="error"],
+.save-status[data-state="expired"] {
+  color: var(--danger);
+}
+
+.editor-title {
+  border: none;
+  border-radius: 0;
+  padding: 0.25rem 1.5rem;
+  font-family: var(--font-read);
+  font-size: 1.6rem;
+  font-weight: 600;
+  outline: none;
+}
+
+.editor-body {
+  flex: 1;
+  border: none;
+  outline: none;
+  resize: none;
+  padding: 0.5rem 1.5rem 2rem;
+  font-family: var(--font-read);
+  font-size: 1.075rem;
+  line-height: 1.7;
+}
+
+/* ---- responsive: single pane on phones --------------------------------- */
+
+@media (max-width: 640px) {
+  .notelist {
+    width: 100%;
+    border-right: none;
+  }
+  /* Show the list by default; when a note is open, show the editor instead. */
+  .workspace.has-open .notelist {
+    display: none;
+  }
+  .workspace:not(.has-open) .editor {
+    display: none;
+  }
+  .back-btn {
+    display: inline;
+  }
 }
